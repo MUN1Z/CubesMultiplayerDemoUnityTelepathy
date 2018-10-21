@@ -19,6 +19,8 @@ public class Network : MonoBehaviour
 
     // Use this for initialization
     void Start () {
+        netPlayersDictionary = new Dictionary<long, NetPlayer>();
+
         client = new Client();
         client.Connect("127.0.0.1", 1337);
 
@@ -34,6 +36,8 @@ public class Network : MonoBehaviour
     {
         if (client != null && client.Connected)
         {
+            OnNetworkReceived();
+
             lastDistance = Vector3.Distance(lastNetworkedPosition, player.transform.position);
             if (lastDistance >= MIN_DISTANCE_TO_SEND_POSITION)
             {
@@ -50,28 +54,58 @@ public class Network : MonoBehaviour
             }
         }
 
-        //foreach (var player in netPlayersDictionary)
-        //{
-        //    if (!player.Value.GameObjectAdded)
-        //    {
-        //        player.Value.GameObjectAdded = true;
-        //        player.Value.GameObject = Instantiate(netPlayerPrefab, player.Value.Position, Quaternion.identity);
-        //    }
-        //    else
-        //        player.Value.GameObject.transform.position = player.Value.Position;
-        //}
+        foreach (var player in netPlayersDictionary)
+        {
+            if (!player.Value.GameObjectAdded)
+            {
+                player.Value.GameObjectAdded = true;
+                player.Value.GameObject = Instantiate(netPlayerPrefab, player.Value.Position, Quaternion.identity);
+            }
+            else
+                player.Value.GameObject.transform.position = player.Value.Position;
+        }
     }
 
-    public void OnMessageReceived()
+    public void OnNetworkReceived()
     {
         if (client != null && client.Connected)
         {
             Message message;
 
             while (client.GetNextMessage(out message))
-            {
+                if (message.eventType == Telepathy.EventType.Data)
+                    OnMessageReceived(new NetworkMessage(message.data));
+        }
+    }
 
-            }
+    public void OnMessageReceived(NetworkMessage message)
+    {
+        if (message.Buffer == null)
+            return;
+
+        switch (message.GetTagPacket())
+        {
+            case NetworkTagPacket.PlayerPositionsArray:
+
+                uint lengthArr = message.GetUInt32();
+
+                Debug.Log($"Got positions array data num : {lengthArr}");
+
+                for (int i = 0; i < lengthArr; i++)
+                {
+                    long playerid = message.GetUInt32();
+
+                    if (!netPlayersDictionary.ContainsKey(playerid))
+                        netPlayersDictionary.Add(playerid, new NetPlayer());
+
+                    netPlayersDictionary[playerid].X = message.GetFloat();
+                    netPlayersDictionary[playerid].Y = message.GetFloat();
+                    netPlayersDictionary[playerid].Z = message.GetFloat();
+
+                    Debug.Log($"PlayerId : {playerid}");
+                }
+
+                break;
         }
     }
 
@@ -80,10 +114,5 @@ public class Network : MonoBehaviour
         if (client != null)
             if (client.Connected)
                 client.Disconnect();
-    }
-
-    // Update is called once per frame
-    void Update () {
-       
     }
 }
