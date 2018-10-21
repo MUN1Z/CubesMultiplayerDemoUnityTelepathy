@@ -101,8 +101,6 @@ public class Network : MonoBehaviour
                     netPlayersDictionary[playerid].X = message.GetFloat();
                     netPlayersDictionary[playerid].Y = message.GetFloat();
                     netPlayersDictionary[playerid].Z = message.GetFloat();
-
-                    Debug.Log($"PlayerId : {playerid}");
                 }
 
                 break;

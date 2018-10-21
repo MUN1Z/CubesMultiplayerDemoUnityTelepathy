@@ -98,29 +98,38 @@ namespace Server
 
         public void OnClientConnected(int connectionId)
         {
-            Console.WriteLine($"OnClientConnected: {connectionId}");
-
-            var message = new NetworkMessage();
-
-            message.AddTagPacket(NetworkTagPacket.PlayerPositionsArray);
-
-            message.AddUInt32((uint)networkPlayersDictionary.Count);
-
-            foreach (var player in networkPlayersDictionary)
+            try
             {
-                message.AddUInt32((uint)player.Key);
 
-                message.AddFloat(player.Value.X);
-                message.AddFloat(player.Value.Y);
-                message.AddFloat(player.Value.Z);
+
+                Console.WriteLine($"OnClientConnected: {connectionId}");
+
+                var message = new NetworkMessage();
+
+                message.AddTagPacket(NetworkTagPacket.PlayerPositionsArray);
+
+                message.AddUInt32((uint)networkPlayersDictionary.Count);
+
+                foreach (var player in networkPlayersDictionary)
+                {
+                    message.AddUInt32((uint)player.Key);
+
+                    message.AddFloat(player.Value.X);
+                    message.AddFloat(player.Value.Y);
+                    message.AddFloat(player.Value.Z);
+                }
+
+                server.Send(connectionId, message.Buffer);
+
+                if (!networkPlayersDictionary.ContainsKey(connectionId))
+                    networkPlayersDictionary.Add(connectionId, new NetworkPlayer(connectionId));
+
+                networkPlayersDictionary[connectionId].Moved = true;
             }
-
-            server.Send(connectionId, message.Buffer);
-
-            if (!networkPlayersDictionary.ContainsKey(connectionId))
-                networkPlayersDictionary.Add(connectionId, new NetworkPlayer(connectionId));
-
-            networkPlayersDictionary[connectionId].Moved = true;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
         }
 
         public void OnClientDisconnected(int connectionId)
@@ -140,26 +149,33 @@ namespace Server
 
         public void OnMessageReceived(NetworkMessage message, int connectionID)
         {
-            if (message.Buffer == null)
-                return;
-
-            switch(message.GetTagPacket())
+            try
             {
-                case NetworkTagPacket.PlayerPosition:
+                if (message.Buffer == null)
+                    return;
 
-                    float x = message.GetFloat();
-                    float y = message.GetFloat();
-                    float z = message.GetFloat();
+                switch (message.GetTagPacket())
+                {
+                    case NetworkTagPacket.PlayerPosition:
 
-                    Console.WriteLine($"Got position packet : {x} | {y} | {z}");
+                        float x = message.GetFloat();
+                        float y = message.GetFloat();
+                        float z = message.GetFloat();
 
-                    networkPlayersDictionary[connectionID].X = x;
-                    networkPlayersDictionary[connectionID].Y = y;
-                    networkPlayersDictionary[connectionID].Z = z;
+                        Console.WriteLine($"Got position packet : {x} | {y} | {z}");
 
-                    networkPlayersDictionary[connectionID].Moved = true;
+                        networkPlayersDictionary[connectionID].X = x;
+                        networkPlayersDictionary[connectionID].Y = y;
+                        networkPlayersDictionary[connectionID].Z = z;
 
-                    break;
+                        networkPlayersDictionary[connectionID].Moved = true;
+
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
             }
         }
 
