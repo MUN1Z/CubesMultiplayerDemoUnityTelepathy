@@ -18,7 +18,7 @@ namespace Server
                 networkPlayersDictionary = new Dictionary<long, NetworkPlayer>();
 
                 server = new Telepathy.Server();
-                server.Start(1337);
+                server.Start(7171);
                 
                 while (server.Active)
                 {

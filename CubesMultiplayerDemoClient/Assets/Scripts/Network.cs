@@ -17,12 +17,17 @@ public class Network : MonoBehaviour
     public GameObject netPlayerPrefab;
     private Dictionary<long, NetPlayer> netPlayersDictionary;
 
+    public string remoteIp;
+    public string localIP;
+
+    public string ip;
+
     // Use this for initialization
     void Start () {
         netPlayersDictionary = new Dictionary<long, NetPlayer>();
 
         client = new Client();
-        client.Connect("127.0.0.1", 1337);
+        client.Connect(ip, 7171);
 
         Thread.Sleep(15);
 
